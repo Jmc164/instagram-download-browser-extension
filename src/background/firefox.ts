@@ -2,10 +2,12 @@ import {
     CONFIG_LIST,
     DEFAULT_DATETIME_FORMAT,
     DEFAULT_FILENAME_FORMAT,
+    MESSAGE_DOWNLOAD_TO_FOLDER,
     MESSAGE_OPEN_URL,
     MESSAGE_ZIP_DOWNLOAD
 } from '../constants';
 import type { ReelsMedia } from '../types/global';
+import { getFolderSetting, saveBlobToFolder } from './folder';
 import { findValueByKey, limitMapSize, saveHighlights, saveProfileReel, saveReels, saveStories } from './fn';
 
 browser.runtime.onInstalled.addListener(async () => {
@@ -14,6 +16,7 @@ browser.runtime.onInstalled.addListener(async () => {
     const defaults: Record<string, any> = {
         setting_format_filename: DEFAULT_FILENAME_FORMAT,
         setting_format_datetime: DEFAULT_DATETIME_FORMAT,
+        setting_download_folder: '', // blank = original behavior
     };
 
     const updates: Record<string, any> = {};
@@ -240,6 +243,19 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     console.log(message, sender);
     const { type, data } = message;
     switch (type) {
+        case MESSAGE_DOWNLOAD_TO_FOLDER: {
+            // Reply { ok: false } when no folder is set or the save fails, so the
+            // content script falls back to the original save method.
+            const folder = await getFolderSetting(data.username);
+            if (!folder) return { ok: false };
+            try {
+                await saveBlobToFolder(data.blob, data.filename, folder);
+                return { ok: true };
+            } catch (e) {
+                console.error('Saving to folder failed, falling back', e);
+                return { ok: false };
+            }
+        }
         case MESSAGE_OPEN_URL:
             await browser.tabs.create({ url: data, index: sender.tab!.index + 1 });
             break;
@@ -265,6 +281,15 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
                 });
             }
             const zipContent = await zipWriter.close();
+            const zipFolder = await getFolderSetting(data.username);
+            if (zipFolder) {
+                try {
+                    await saveBlobToFolder(zipContent, data.zipFileName + '.zip', zipFolder);
+                    break;
+                } catch (e) {
+                    console.error('Saving ZIP to folder failed, falling back', e);
+                }
+            }
             const blobUrl = URL.createObjectURL(zipContent);
             downloadZip(blobUrl, data.zipFileName + '.zip');
             break

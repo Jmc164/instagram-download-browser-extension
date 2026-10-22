@@ -66,6 +66,7 @@ async function handleZipFirefox(articleNode: HTMLElement) {
         type: MESSAGE_ZIP_DOWNLOAD,
         data: {
             blobList,
+            username: data.owner?.username,
             zipFileName: await getFilenameFromUrl({
                 url: '',
                 username: data.owner.username,

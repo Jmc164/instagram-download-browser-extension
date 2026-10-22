@@ -11,6 +11,7 @@ export interface StorageSettings {
     setting_enable_datetime_format?: boolean;
     setting_format_filename?: string;
     setting_format_datetime?: string;
+    setting_download_folder?: string;
 
     [key: string]: any;
 }

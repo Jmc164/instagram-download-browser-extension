@@ -1,4 +1,4 @@
-import { MESSAGE_OPEN_URL } from '../../constants';
+import { MESSAGE_DOWNLOAD_TO_FOLDER, MESSAGE_OPEN_URL } from '../../constants';
 import { DownloadParams, getFilenameFromUrl } from './filename';
 
 import { storageCache } from './storage';
@@ -11,10 +11,34 @@ export async function openInNewTab(url: string) {
     }
 }
 
-async function forceDownload(blob: string, filename: string, extension: string) {
+// If a download folder is set, hand the file to the background script, which
+// saves it with Firefox's downloads API (the only way to choose a subfolder).
+// Returns false when no folder is set or anything fails, so the caller can use
+// the original save method instead.
+async function trySaveToFolder(blobUrl: string, fullFilename: string, username?: string): Promise<boolean> {
+    const folder = storageCache.settings.setting_download_folder;
+    if (typeof folder !== 'string' || !folder.trim()) return false;
+    try {
+        const blob = await (await fetch(blobUrl)).blob();
+        const res = await chrome.runtime.sendMessage({
+            type: MESSAGE_DOWNLOAD_TO_FOLDER,
+            data: { blob, filename: fullFilename, username },
+        });
+        return !!res?.ok;
+    } catch (e) {
+        console.error('Save to folder failed, using default download', e);
+        return false;
+    }
+}
+
+async function forceDownload(blob: string, filename: string, extension: string, username?: string) {
     const { setting_format_replace_jpeg_with_jpg } = storageCache.settings;
     if (setting_format_replace_jpeg_with_jpg) {
         extension = extension.replace('jpeg', 'jpg');
+    }
+    if (await trySaveToFolder(blob, `${filename}.${extension}`, username)) {
+        setTimeout(() => URL.revokeObjectURL(blob), 100);
+        return;
     }
     const a = document.createElement('a');
     a.href = blob;
@@ -171,7 +195,7 @@ export async function downloadResource(params: DownloadParams) {
     const filename = await getFilenameFromUrl(params);
 
     if (url.startsWith('blob:')) {
-        forceDownload(url, filename, 'mp4');
+        forceDownload(url, filename, 'mp4', params.username);
         return;
     }
     fetch(url, {
@@ -184,7 +208,7 @@ export async function downloadResource(params: DownloadParams) {
         .then((blob) => {
             const extension = blob.type.split('/').pop();
             const blobUrl = window.URL.createObjectURL(blob);
-            forceDownload(blobUrl, filename, extension || 'jpg');
+            forceDownload(blobUrl, filename, extension || 'jpg', params.username);
         })
         .catch((e) => console.error(e));
 }

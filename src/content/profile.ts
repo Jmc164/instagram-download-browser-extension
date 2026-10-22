@@ -11,6 +11,7 @@ export async function profileOnClicked(target: HTMLAnchorElement) {
             downloadResource({
                 url: url,
                 id: username!,
+                username: username || undefined,
             });
         } else {
             openInNewTab(url);

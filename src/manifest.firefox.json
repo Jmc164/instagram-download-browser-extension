@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Instagram Downloader",
+  "name": "Instagram Downloader (Custom Folder)",
   "version": "__MSG_extVersion__",
-  "description": "Help users download images and videos easily on Instagram",
+  "description": "Instagram Downloader by konka, modified to save downloads into a folder of your choice",
   "homepage_url": "https://github.com/TheKonka/instagram-download-browser-extension",
   "icons": {
     "16": "icons/icon-16.png",
@@ -20,7 +20,7 @@
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png"
     },
-    "default_title": "Instagram Downloader",
+    "default_title": "Instagram Downloader (Custom Folder)",
     "default_popup": "popup/index.html"
   },
   "host_permissions": [
@@ -28,6 +28,7 @@
     "https://www.threads.com/*"
   ],
   "permissions": [
+    "downloads",
     "storage",
     "unlimitedStorage",
     "webRequest",
@@ -42,10 +43,13 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "1094918@gmail.com"
+      "id": "instagram-downloader-custom-folder@local",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
     },
     "gecko_android": {
-      "strict_min_version": "120.0a1"
+      "strict_min_version": "142.0"
     }
   },
   "content_scripts": [
