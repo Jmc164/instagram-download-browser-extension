@@ -17,6 +17,7 @@ function App() {
 
    const [fileNameFormat, setFileNameFormat] = useState<string>(DEFAULT_FILENAME_FORMAT);
    const [dateTimeFormat, setDateTimeFormat] = useState<string>(DEFAULT_DATETIME_FORMAT);
+   const [downloadFolder, setDownloadFolder] = useState<string>('');
 
    const isMobile = navigator && navigator.userAgent && /Mobi|Android|iPhone/i.test(navigator.userAgent);
 
@@ -33,6 +34,7 @@ function App() {
 
          setFileNameFormat(res.setting_format_filename || DEFAULT_FILENAME_FORMAT);
          setDateTimeFormat(res.setting_format_datetime || DEFAULT_DATETIME_FORMAT);
+         setDownloadFolder(typeof res.setting_download_folder === 'string' ? res.setting_download_folder : '');
       });
    }, []);
 
@@ -72,6 +74,26 @@ function App() {
                   label="Show `Download ZIP` Icon"
                   id="setting_show_zip_download_icon"
                />
+
+               <h2>Save Location</h2>
+               <div className="group">
+                  <input
+                     type="text"
+                     value={downloadFolder}
+                     onChange={(e) => {
+                        const value = (e.target as HTMLInputElement).value;
+                        setDownloadFolder(value);
+                        chrome.storage.sync.set({ setting_download_folder: value });
+                     }}
+                  />
+                  <span className="highlight"></span>
+                  <span className="bar"></span>
+                  <label>Download Folder</label>
+               </div>
+               <p className="hint">
+                  A folder inside your Firefox download folder, e.g. {'Instagram'} or {'Instagram/{username}'}. Leave blank to save
+                  the normal way.
+               </p>
 
                <h2>Download File Name Settings</h2>
                <SettingItem

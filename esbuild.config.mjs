@@ -51,4 +51,9 @@ const ctx = await esbuild.context({
    ],
 });
 
-ctx.watch();
+if (argv.includes('--once')) {
+   await ctx.rebuild();
+   await ctx.dispose();
+} else {
+   ctx.watch();
+}
